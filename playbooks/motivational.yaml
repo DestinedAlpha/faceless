@@ -1,0 +1,36 @@
+niche: motivational
+# Stoic / discipline / success. Punchy, rhythmic, emotionally escalating.
+structure: [hook, hard_truth, reframe, call_to_action, payoff, loop]
+pacing:
+  seconds_per_scene: 3.5
+  scene_count: [5, 9]
+  total_seconds: [28, 45]
+voice:
+  style: "intense, deliberate, rising conviction; short punchy sentences"
+  wpm: 145
+  edge_voice: "en-US-GuyNeural"
+  edge_rate: "+0%"
+  emphasis: "slow and heavy; let key lines land with pauses; crescendo toward the end"
+visual:
+  art_direction: "moody cinematic, silhouettes, storms, mountains, dramatic god-rays, high contrast"
+  style_suffix: "moody cinematic, high contrast, dramatic silhouette, atmospheric"
+  palette: "dark with warm rim light"
+motion:
+  transitions: ["fade", "slide"]
+captions:
+  style: "bold"
+  position: "center"
+music:
+  mood: ["epic", "emotional", "building", "cinematic-piano"]
+  bpm: [70, 110]
+sfx: ["riser", "impact", "low-drone"]
+thumbnail:
+  style: "lone silhouette against dramatic sky, few heavy words"
+title:
+  patterns:
+    - "Do this and everything changes"
+    - "The hard truth about {topic}"
+    - "Watch this if you feel stuck"
+hook_formulas:
+  - "Open with a blunt, confronting truth the viewer needs to hear."
+  - "Call the viewer out directly: 'You already know what you have to do.'"

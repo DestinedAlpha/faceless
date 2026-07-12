@@ -1,0 +1,24 @@
+# Core
+pyyaml>=6.0
+python-dotenv>=1.0
+httpx>=0.27
+tenacity>=8.2          # retry/backoff
+rich>=13.7             # pretty CLI/logs
+
+# LLM
+google-genai>=0.3      # Gemini (new unified SDK)
+groq>=0.11             # Groq fallback + Whisper
+
+# Trends
+praw>=7.7              # Reddit
+
+# Voice / audio
+edge-tts>=6.1          # reliable free TTS with word boundaries
+gradio_client>=1.3     # call Chatterbox HF Space
+
+# Images / thumbnail
+pillow>=10.3
+rembg>=2.0             # background cutout for thumbnails (onnxruntime pulled in)
+
+# Utility
+numpy>=1.26

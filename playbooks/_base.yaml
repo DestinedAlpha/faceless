@@ -1,0 +1,74 @@
+# ============================================================================
+# Base playbook — shared defaults every niche playbook inherits.
+# A niche file (e.g. explainer.yaml) only needs to override what differs.
+# mastery.py deep-merges <niche>.yaml OVER this file.
+#
+# This is the "mastery" spec: an explicit, reusable recipe for how to make a
+# given kind of video well. Every downstream stage (script, voice, captions,
+# visuals, spec, packaging) reads from the resolved playbook so the whole run
+# speaks the niche's language instead of a one-size template.
+# ============================================================================
+
+niche: generic
+
+# Beat map — the retention spine of the video (hook opens a loop, payoff closes it).
+structure: [hook, setup, escalation, payoff, loop]
+
+pacing:
+  seconds_per_scene: 4.5      # target average; TTS audio still drives real timing
+  scene_count: [4, 9]         # clamp the LLM's scene count into this band
+  total_seconds: [30, 55]     # short-form target length band
+
+voice:
+  style: "clear, engaging, confident narrator"
+  wpm: 160                    # spoken words/sec = wpm/60 -> paces the script
+  edge_voice: "en-US-AriaNeural"
+  edge_rate: "+6%"
+  edge_pitch: "+0Hz"
+  emphasis: "punch the first line (hook) and the final payoff; keep the middle brisk"
+
+visual:
+  art_direction: "cinematic, photoreal, dramatic lighting, shallow depth of field, 8k"
+  palette: "rich, high-contrast"
+  style_suffix: "cinematic, high detail, dramatic composition"   # appended to every image prompt
+  negative: "text, watermark, logo, caption, extra fingers, deformed, blurry, low quality"
+  consistency: "keep the same subject look, art style and lighting across all scenes"
+
+motion:
+  parallax_intensity: 0.35    # (consumed by future 2.5D layer; safe to carry now)
+  transitions: ["fade"]       # fade | slide | none (first entry is the default)
+
+captions:
+  style: "clean"              # clean | bold | brainrot
+  position: "lower"           # lower | center
+  emphasis: true              # highlight the key word of each caption group
+  font_family: "Inter"
+  max_words_per_group: 4
+
+music:
+  mood: ["cinematic", "ambient"]
+  bpm: [80, 120]
+
+sfx: ["whoosh", "riser"]
+
+thumbnail:
+  style: "high-contrast, bold heavy sans, subject-forward, leaves room for text"
+
+title:
+  patterns:
+    - "The truth about {topic}"
+    - "{topic}: what nobody tells you"
+    - "Why {topic} matters more than you think"
+
+cta: "Follow for more."
+
+# Proven opening patterns; the script writer picks/adapts one for the hook.
+hook_formulas:
+  - "Open with a surprising, specific claim that contradicts what people assume."
+  - "Pose a curiosity-gap question the viewer needs answered."
+  - "Drop the viewer mid-action into the most dramatic moment, then rewind."
+
+# Targets the analytics learn-loop will update over time.
+retention_targets:
+  avd_pct: 0.55
+  hook_hold_pct: 0.75

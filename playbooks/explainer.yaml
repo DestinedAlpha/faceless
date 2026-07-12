@@ -1,0 +1,36 @@
+niche: explainer
+# Did-you-know / how-it-works. Clear, curiosity-driven, satisfying payoff.
+structure: [hook, context, mechanism, implication, payoff, loop]
+pacing:
+  seconds_per_scene: 4.0
+  scene_count: [4, 8]
+  total_seconds: [30, 50]
+voice:
+  style: "clear, curious, authoritative but friendly"
+  wpm: 168
+  edge_voice: "en-US-AriaNeural"
+  edge_rate: "+8%"
+  emphasis: "punch the surprising claim in the hook and the 'aha' at the payoff"
+visual:
+  art_direction: "clean modern, soft depth, tasteful infographic-adjacent realism"
+  style_suffix: "clean cinematic, soft depth of field, modern, crisp lighting"
+  palette: "cool blues, whites, a single accent color"
+motion:
+  transitions: ["fade"]
+captions:
+  style: "bold"
+  position: "center"
+music:
+  mood: ["curious", "uplifting", "light-electronic"]
+  bpm: [95, 125]
+sfx: ["click", "pop", "whoosh"]
+thumbnail:
+  style: "one bold subject, high-contrast, big clear claim text"
+title:
+  patterns:
+    - "How {topic} actually works"
+    - "The real reason {topic}"
+    - "{topic}, explained fast"
+hook_formulas:
+  - "State a counterintuitive fact about the topic that breaks a common assumption."
+  - "Ask 'Ever wondered why...?' then promise a clear answer in seconds."

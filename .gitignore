@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+cache/
+output/
+node_modules/
+remotion/out/
+remotion/output/
+remotion/public/render/
+*.log
+scratch_*
+.DS_Store

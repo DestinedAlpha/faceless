@@ -1,0 +1,35 @@
+niche: top-list
+# Top 5 / ranked facts. Fast, escalating, with a strong #1 payoff.
+structure: [hook, item_5, item_4, item_3, item_2, item_1, loop]
+pacing:
+  seconds_per_scene: 3.5
+  scene_count: [6, 8]
+  total_seconds: [30, 50]
+voice:
+  style: "upbeat, energetic, building anticipation toward number one"
+  wpm: 172
+  edge_voice: "en-US-AriaNeural"
+  edge_rate: "+10%"
+  emphasis: "count down with rising energy; biggest punch on number one"
+visual:
+  art_direction: "vivid, bold, high-saturation cinematic; each item visually distinct"
+  style_suffix: "vivid cinematic, bold colors, high detail"
+motion:
+  transitions: ["slide", "fade"]
+captions:
+  style: "bold"
+  position: "center"
+music:
+  mood: ["energetic", "upbeat", "electronic"]
+  bpm: [110, 135]
+sfx: ["whoosh", "pop", "ding"]
+thumbnail:
+  style: "big number, bold colors, high-contrast subject, 'TOP 5' framing"
+title:
+  patterns:
+    - "Top 5 {topic}"
+    - "5 {topic} that will surprise you"
+    - "The #1 {topic} nobody expects"
+hook_formulas:
+  - "Tease that number one will shock them, then start the countdown fast."
+  - "Promise a ranked list with a payoff they won't see coming at #1."

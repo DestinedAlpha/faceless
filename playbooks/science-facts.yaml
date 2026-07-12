@@ -1,0 +1,36 @@
+niche: science-facts
+# Space / ocean / biology "whoa" facts. Awe-driven, vivid, mind-expanding.
+structure: [hook, scale_or_context, the_fact, why_it_matters, payoff, loop]
+pacing:
+  seconds_per_scene: 4.5
+  scene_count: [4, 8]
+  total_seconds: [30, 50]
+voice:
+  style: "awed, wondrous, calm-but-gripping science communicator"
+  wpm: 158
+  edge_voice: "en-US-AriaNeural"
+  edge_rate: "+5%"
+  emphasis: "let the scale/awe moments breathe; punch the mind-bending fact"
+visual:
+  art_direction: "epic photoreal science imagery: cosmos, deep ocean, microscopic worlds; sense of scale"
+  style_suffix: "epic photoreal, cinematic, dramatic scale, ultra detailed"
+  palette: "deep blues, blacks, luminous accents"
+motion:
+  transitions: ["fade"]
+captions:
+  style: "clean"
+  position: "lower"
+music:
+  mood: ["cosmic", "ambient", "awe", "cinematic"]
+  bpm: [70, 105]
+sfx: ["low-drone", "riser", "shimmer"]
+thumbnail:
+  style: "one awe-inducing cosmic/ocean image, bold clean text"
+title:
+  patterns:
+    - "This {topic} fact will break your brain"
+    - "The scale of {topic} is terrifying"
+    - "You won't believe {topic} is real"
+hook_formulas:
+  - "Open with a staggering number or scale comparison that feels impossible."
+  - "Pose an unsettling 'what if' about the universe/ocean and answer it."

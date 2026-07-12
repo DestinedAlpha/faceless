@@ -1,0 +1,37 @@
+niche: sports-facts
+# Records, untold moments, "how X did the impossible." Energetic, dramatic stakes.
+structure: [hook, the_setup, the_moment, the_stakes, payoff, loop]
+pacing:
+  seconds_per_scene: 3.8
+  scene_count: [5, 9]
+  total_seconds: [30, 50]
+voice:
+  style: "energetic sports-doc narrator; dramatic build, big finish"
+  wpm: 175
+  edge_voice: "en-US-GuyNeural"
+  edge_rate: "+8%"
+  emphasis: "build tension into the moment; explode on the payoff"
+visual:
+  art_direction: "dynamic stadium/action energy, dramatic floodlights, motion-blur cinematic (no real logos/faces by name)"
+  style_suffix: "dynamic cinematic sports imagery, dramatic lighting, high energy, photoreal"
+  consistency: "keep a consistent generic athlete/setting; avoid real named players' likenesses"
+motion:
+  parallax_intensity: 0.45
+  transitions: ["slide", "fade"]
+captions:
+  style: "bold"
+  position: "center"
+music:
+  mood: ["epic", "energetic", "triumphant"]
+  bpm: [110, 140]
+sfx: ["whoosh", "impact", "crowd-roar"]
+thumbnail:
+  style: "dramatic action silhouette, floodlights, bold punchy text"
+title:
+  patterns:
+    - "The most insane moment in {topic}"
+    - "How this {topic} record was broken"
+    - "Nobody thought {topic} was possible"
+hook_formulas:
+  - "Open on the impossible stat/record, then rewind to how it happened."
+  - "Freeze the decisive moment and ask if they can believe what's about to happen."

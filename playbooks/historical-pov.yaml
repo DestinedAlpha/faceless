@@ -1,0 +1,36 @@
+niche: historical-pov
+# "Your life as X in <era>" — immersive second-person historical journeys. AI-image driven.
+structure: [hook, born_into, daily_struggle, turning_point, fate, loop]
+pacing:
+  seconds_per_scene: 5.0
+  scene_count: [5, 9]
+  total_seconds: [35, 55]
+voice:
+  style: "immersive, cinematic storyteller; measured and vivid, like a documentary narrator"
+  wpm: 150
+  edge_voice: "en-US-GuyNeural"
+  edge_rate: "+2%"
+  emphasis: "slow, weighty delivery on the hook and the fate; build tension through the middle"
+visual:
+  art_direction: "historically accurate, cinematic, volumetric light, film-grain, epic scale"
+  style_suffix: "historical cinematic still, dramatic natural lighting, photoreal, film grain"
+  consistency: "same protagonist appearance, period-accurate clothing, and location style across scenes"
+motion:
+  transitions: ["fade", "slide"]
+captions:
+  style: "clean"
+  position: "lower"
+music:
+  mood: ["epic", "somber", "cinematic", "orchestral"]
+  bpm: [70, 100]
+sfx: ["low-drone", "impact"]
+thumbnail:
+  style: "epic historical scene, single dramatic subject, bold serif-ish heavy text"
+title:
+  patterns:
+    - "Your life as {topic}"
+    - "What it was really like to be {topic}"
+    - "You are {topic}. This is your life."
+hook_formulas:
+  - "Address the viewer directly in second person and drop them into the era: 'You wake up in...'"
+  - "Open on the single most dangerous or dramatic moment of that life, then rewind to the start."

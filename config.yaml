@@ -1,0 +1,133 @@
+# ==========================================================================
+# Faceless video generator — configuration
+# NO hardcoded topic/niche lives here. The system chooses those from trends.
+# This file only tunes *how* discovery, selection and rendering behave.
+# ==========================================================================
+
+# --- Trend discovery -------------------------------------------------------
+trends:
+  # YouTube "mostPopular" is fetched per region x category (1 quota unit each).
+  youtube:
+    enabled: true
+    regions: ["US", "GB", "IN"]        # ISO 3166-1 alpha-2
+    # YouTube video category IDs. 0 = all. Common: 24 Entertainment,
+    # 28 Science&Tech, 17 Sports, 25 News, 27 Education, 20 Gaming, 10 Music
+    categories: [0, 24, 28, 27]
+    max_per_call: 50                   # 1..50
+  reddit:
+    enabled: true
+    subreddits: ["all", "todayilearned", "interestingasfuck", "Damnthatsinteresting",
+                 "sports", "science", "history", "technology"]
+    listings: ["hot", "rising", "top"] # top uses time_filter=day
+    limit_per_listing: 40
+  # Composite TopicScore weights (must sum to ~1.0)
+  score_weights:
+    view_velocity: 0.45
+    comment_rate: 0.20
+    like_ratio: 0.15
+    recency_decay: 0.20
+  recency_halflife_hours: 48          # for recency_decay
+  cross_platform_boost: 1.25          # multiplier if a topic appears on >=2 platforms
+  min_cluster_size: 1
+  top_n_topics: 15                    # how many ranked topics to feed the selector
+
+# --- Content policy (guardrails, NOT topic selection) ----------------------
+policy:
+  # Niches the selector may choose from (it still picks per trend).
+  allow_niches:
+    - historical-pov         # "your life as X in <era>" — AI-image driven, safe, huge
+    - explainer              # did-you-know / how-it-works
+    - motivational           # stoic / discipline / success
+    - top-list               # top 5 / ranked facts
+    - story-brainrot         # fast-cut narrated story
+    - science-facts
+    - sports-facts
+  deny_niches: []
+  # Hard blocks the selector must never touch.
+  blocked_terms: ["nsfw", "gore", "graphic violence", "self-harm", "hate",
+                  "real named minors", "medical advice", "election fraud claims"]
+  # Prefer topics that can be told with AI imagery + stock, not copyrighted clips.
+  prefer_copyright_safe: true
+
+# --- Format / packaging (AI decides per run; these are just bounds) ---------
+format:
+  short:
+    aspect: "9:16"
+    width: 1080
+    height: 1920
+    min_seconds: 20
+    max_seconds: 59
+  long:
+    aspect: "16:9"
+    width: 1920
+    height: 1080
+    min_seconds: 180
+    max_seconds: 600
+  fps: 30
+  default_kind: "short"       # selector may override to "long"
+
+# --- Providers & fallback order -------------------------------------------
+providers:
+  llm:
+    order: ["gemini", "groq"]
+    gemini_model: "gemini-2.5-flash"
+    groq_model: "llama-3.3-70b-versatile"
+  images:
+    order: ["pollinations", "cloudflare"]
+    pollinations_model: "flux"
+    # width/height per format are derived at render time
+  stock:
+    order: ["pexels", "pixabay"]
+  tts:
+    order: ["chatterbox", "kokoro", "gemini_tts", "edge"]   # expressive first, reliable last
+    edge_voice: "en-US-AriaNeural"
+    edge_rate: "+6%"
+    edge_pitch: "+0Hz"
+    # Cloud Gemini TTS (free tier) — natural + style-promptable. Needs GEMINI_API_KEY.
+    use_gemini: true
+    gemini_model: "gemini-2.5-flash-preview-tts"
+    gemini_voice: "Kore"
+    # Expressive HF Spaces (Gradio). Left blank => skipped. Set a Space id to enable.
+    # Chatterbox = most emotive; Kokoro = natural + light. api names vary per Space.
+    chatterbox_space: ""
+    chatterbox_api: "/generate"
+    kokoro_space: ""
+    kokoro_api: "/generate"
+    # Loudness-normalize narration for consistent levels (needs ffmpeg; safely skipped if absent).
+    loudnorm: true
+    loudnorm_i: -16
+  subtitles:
+    order: ["edge_boundaries", "groq_whisper"]
+    groq_whisper_model: "whisper-large-v3-turbo"
+
+# --- Rendering knobs -------------------------------------------------------
+render:
+  ken_burns: true
+  ken_burns_zoom: 0.12          # fractional zoom over a scene
+  transition: "fade"            # fade | slide | none
+  transition_frames: 12
+  captions:
+    enabled: true
+    style: "tiktok"            # word-by-word highlight
+    max_words_per_group: 4
+    font_family: "Inter"
+    emphasis: true             # punch the key word of each caption group
+  music:
+    enabled: true
+    synthesize: true           # if no local track, synthesize a mood-matched bed (free, offline)
+    duck_db: -14               # background music level under narration
+  sfx:
+    enabled: true
+    gain_db: -8                # scene sfx level (under narration)
+  remotion_concurrency: 2
+  remotion_crf: 18             # quality (lower = better, bigger)
+
+# --- Runtime ---------------------------------------------------------------
+runtime:
+  cache_dir: "cache"
+  output_dir: "output"
+  http_timeout: 60
+  http_retries: 3
+  log_level: "INFO"
+  # If true, reuse cached provider responses when available (faster dev loops).
+  use_cache: true
