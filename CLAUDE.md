@@ -3,8 +3,9 @@
 100% free, fully-automated faceless-video generator. Python discovers trends
 (YouTube+Reddit) → LLM (Gemini→Groq) picks topic/format → per-niche "playbook" →
 scene script → voice + AI images + karaoke captions + SFX/music → `video_spec.json`
-→ Remotion renders a 9:16 MP4 → thumbnail + metadata. Run: `python -m faceless [run|trends|plan]`.
-Degrades gracefully with zero keys. No auto-upload.
+→ Remotion renders a 9:16 (or 16:9 long-form) MP4 → thumbnail + metadata. Run:
+`python -m faceless [run|trends|plan|learn]`. Degrades gracefully with zero keys. No
+auto-upload. STATUS: all 7 planned phases complete + verified — feature-complete/usable.
 
 ## Hard constraints (never violate)
 - 100% free (no paid APIs/cards). Cloud-only, light (no local GPU / heavy models).
@@ -12,7 +13,46 @@ Degrades gracefully with zero keys. No auto-upload.
 - Analytics learning is manual-upload-only (never auto-post).
 - Every provider needs a free fallback; a dead API must never break a run.
 
+## Adding/changing features (READ THIS FIRST when asked to build something)
+- `DEVELOPMENT.md` = the how-to-extend guide: architecture map, the 3 contracts
+  (video_spec.json / playbook schema / LLM schemas), invariants, change recipes, and the
+  verify checklist. Follow its §0 workflow: plan in the md files → implement one feature →
+  verify (end with a REAL render) → record here in "Done".
+- `BACKLOG.md` = running list of smaller feature ideas/requests (scoped, ready to pick up).
+- `BEST_VERSION_ROADMAP.md` = north-star design; add large initiatives as a new "Phase 8+".
+- When the user says "plan feature X" → write/refine its BACKLOG (or roadmap) entry and
+  stop for review. "plan and implement X" → run the full loop and log it here.
+
 ## Done (do not redo)
+- Phase 7 Optional AI-video hero clips + long-form polish (FINAL planned phase — the
+  project is now feature-complete). AI clips: `faceless/assets/motion.py` gains
+  `aivideo_available()` (gated on `providers.aivideo.enabled` AND a configured `space`,
+  so the default fast path never imports gradio) + `ai_clip(image, out_dir, index)` — a
+  free HF Space image-to-video (LTX-Video/SVD) call run on a worker thread with a HARD
+  `timeout_seconds` wall-clock cap (`concurrent.futures`), unwrapping the usual Gradio
+  result shapes (str/dict/list), size-checked, saved as `scene_NN_ai.mp4`; any
+  timeout/queue/absence returns None → fall back to 2.5D parallax or the still. NEVER on
+  the critical path, OFF by default. `pipeline._hero_beats(scene_audio)` picks ≤`max_clips`
+  hero beats (hook scene 0, then payoff last scene) filtered by `min_scene_seconds`, and
+  is empty (no gradio import) unless the layer is enabled; wired in `run()` per-scene
+  (`scene_assets[*].clip`), staged, counted in summary (`ai_clips`). Spec carries
+  `scene.clip`; Remotion `types.ts` + `Scene.tsx` render it via `<Video muted loop>` at
+  TOP priority over parallax/stock/still (OffthreadVideo lacks `loop` in 4.0.240 → use
+  `Video`). Long-form polish: `script._scene_count(secs, pb, kind)` now format-aware —
+  long-form uses `pacing.long_seconds_per_scene` (~7s) + `long_scene_count` band [8,48]
+  (added to `_base.yaml`) so a 5-min video is ~26-43 real beats, not a 9-slide slideshow
+  (short unchanged). `metadata._derive_chapters(script)` builds ≥3 YouTube chapter markers
+  (first forced to 00:00) from cumulative beat durations when the LLM omits/under-delivers
+  them, wired into `_sanitize` + `_template` (long-form only; Shorts stay []). Config
+  `providers.aivideo:` block (enabled/space/api_name/timeout_seconds/max_clips/
+  min_scene_seconds). `smoke_test.check_aivideo` (SKIP when off; soft-SKIP on an
+  unreachable Space since a queue is expected; FAIL only on missing gradio_client).
+  README updated. Verified: real 8-scene explainer Short (mirroring-technique, 1410f/47s
+  @30fps) rendered end-to-end with the new spec (`scene.clip` field present, AI layer OFF
+  so it degraded to parallax/stills as designed); py_compile + `tsc --noEmit` clean;
+  chapter derivation + long-form pacing unit-checked (short 45s→8 scenes, long 300s→43).
+  NOTE: Remotion still tab-OOMs at concurrency=2 on ~1400-frame jobs (exit 143) and the
+  bridge's auto-retry at concurrency=1 renders clean — unchanged from Phase 4/5.
 - Phase 6 Analytics learn-loop (manual-upload-only, all free): new `faceless/learn/`
   package. `store.py` owns `memory/performance.jsonl` (upsert/dedup by run_id) + run-folder
   feature extraction (niche, hook shape via `classify_hook`, pacing, title variants) + a cheap
@@ -98,10 +138,15 @@ Degrades gracefully with zero keys. No auto-upload.
   loudnorm; spec+Remotion (`Scene.tsx`/`Video.tsx`/`types.ts`) play per-scene SFX; caption
   per-word `emphasis` carried in spec.
 
-## Remaining (one phase fully at a time; end each with a REAL render)
-- Phase 7 optional AI-video clips + long-form (HF Space LTX/SVD, time-boxed, opt-in;
-  long-form pacing/chapters polish). This is the last planned phase.
-- Full plan: see `BEST_VERSION_ROADMAP.md`.
+## Remaining
+- NONE — all 7 planned phases (1 Voice+Sound, 2 Motion+Coherence, 3 Mastery, 4 Hook+QC,
+  5 Packaging, 6 Learn-loop, 7 AI-clips+long-form) are DONE and verified with real renders.
+  The generator is feature-complete and usable end-to-end: `python -m faceless`.
+- Optional future polish (not planned work, only if desired): lower the default
+  `render.remotion_concurrency` to 1 to skip the concurrency=2 OOM+retry on long jobs;
+  bundle a curated CC music/SFX library into `assets_lib/`; wire a real LTX/SVD Space id
+  into `providers.aivideo.space` once you've picked a reliable free one.
+- Full plan/history: see `BEST_VERSION_ROADMAP.md`.
 
 ## Run / verify
 ```

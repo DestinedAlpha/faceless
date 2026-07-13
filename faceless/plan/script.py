@@ -33,13 +33,22 @@ def _words_per_sec(playbook: dict | None) -> float:
         return WORDS_PER_SEC
 
 
-def _scene_count(secs: float, playbook: dict | None) -> int:
+def _scene_count(secs: float, playbook: dict | None, kind: str = "short") -> int:
     pb = playbook or {}
     pacing = pb.get("pacing", {})
     sps = float(pacing.get("seconds_per_scene", 4.5) or 4.5)
-    n = round(secs / max(2.0, sps))
     band = pacing.get("scene_count") or [3, 14]
     lo, hi = int(band[0]), int(band[1])
+    if kind == "long":
+        # Long-form: the Short scene band (e.g. [4,9]) would leave a 5-minute video
+        # as ~9 scenes of ~33s each — a slideshow. Pace it like real long-form: a
+        # slightly longer beat (~7s, so a shot doesn't overstay) but many more of
+        # them, scaled to the target length and capped so we don't fan out to
+        # hundreds of images/TTS calls. Playbooks may override via pacing.long_*.
+        sps = float(pacing.get("long_seconds_per_scene", max(sps, 7.0)) or 7.0)
+        long_band = pacing.get("long_scene_count") or [8, 48]
+        lo, hi = int(long_band[0]), int(long_band[1])
+    n = round(secs / max(2.0, sps))
     return max(lo, min(hi, max(3, n)))
 
 
@@ -49,7 +58,7 @@ def _prompt(selection: dict, playbook: dict | None, hook: str | None = None) -> 
     pb = playbook or {}
     wps = _words_per_sec(pb)
     total_words = int(secs * wps)
-    n_scenes = _scene_count(secs, pb)
+    n_scenes = _scene_count(secs, pb, kind)
     per_scene = max(2.0, secs / n_scenes)
     structure = " -> ".join(pb.get("structure", []) or [])
     hooks = "\n".join(f"  - {h}" for h in (pb.get("hook_formulas") or [])[:4])
@@ -93,7 +102,7 @@ def _template(selection: dict, playbook: dict | None, hook: str | None = None) -
     topic = selection["topic"]
     secs = selection["target_seconds"]
     pb = playbook or {}
-    n = _scene_count(secs, pb)
+    n = _scene_count(secs, pb, selection.get("format", "short"))
     per = secs / n
     visual = pb.get("visual", {})
     style = visual.get("style_suffix") or selection.get("style", "cinematic")

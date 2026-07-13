@@ -99,6 +99,18 @@ providers:
   subtitles:
     order: ["edge_boundaries", "groq_whisper"]
     groq_whisper_model: "whisper-large-v3-turbo"
+  # Optional AI-video hero clips (Phase 7). True generative motion for 1-2 hero
+  # beats via a FREE Hugging Face Space (image-to-video: LTX-Video / SVD). Flaky
+  # by nature (queues, cold starts), so it is OFF by default and STRICTLY time-boxed
+  # — a slow/down Space just falls back to 2.5D parallax or the flat still. Never
+  # on the critical path. Set `space` to a Gradio Space id to enable.
+  aivideo:
+    enabled: false                 # opt-in; leave off for the reliable fast path
+    space: ""                      # e.g. "Lightricks/LTX-Video" — blank => disabled
+    api_name: "/generate"          # Gradio endpoint name (varies per Space)
+    timeout_seconds: 90            # hard wall-clock cap per clip; then fall back
+    max_clips: 1                   # how many hero beats may get a real AI clip
+    min_scene_seconds: 2.5         # only beats at least this long are worth a clip
 
 # --- Rendering knobs -------------------------------------------------------
 render:

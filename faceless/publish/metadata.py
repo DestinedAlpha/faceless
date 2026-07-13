@@ -25,6 +25,45 @@ _SYSTEM = (
 )
 
 
+def _mmss(seconds: float) -> str:
+    seconds = max(0, int(round(seconds)))
+    return f"{seconds // 60:02d}:{seconds % 60:02d}"
+
+
+def _derive_chapters(script: dict) -> list[dict]:
+    """Build YouTube chapter markers from the script's beats when the LLM gave none.
+
+    Long-form needs ≥3 chapters and the first at 00:00. We walk the scenes by their
+    estimated durations, grouping them into ~5 evenly-sized chapters, and label each
+    from its first beat's on-screen text (or a trimmed narration). Purely a fallback
+    so long-form always ships valid chapters even offline / when the model omits them.
+    """
+    scenes = script.get("scenes") or []
+    if len(scenes) < 3:
+        return []
+    # Cumulative start time (seconds) of each scene from its duration estimate.
+    starts, t = [], 0.0
+    for s in scenes:
+        starts.append(t)
+        try:
+            t += float(s.get("duration") or 4.0)
+        except (TypeError, ValueError):
+            t += 4.0
+    target = min(6, max(3, len(scenes) // 3))     # aim for 3-6 chapters
+    step = max(1, len(scenes) // target)
+    out: list[dict] = []
+    for i in range(0, len(scenes), step):
+        s = scenes[i]
+        label = (s.get("on_screen_text") or "").strip() or \
+                " ".join((s.get("narration") or "").split()[:6]).strip() or f"Part {len(out) + 1}"
+        out.append({"time": _mmss(starts[i]), "label": label[:60]})
+        if len(out) >= target:
+            break
+    if out:
+        out[0]["time"] = "00:00"                  # YouTube requires the first at 00:00
+    return out
+
+
 def _fill_patterns(patterns: list, topic: str) -> list[str]:
     """Render playbook title.patterns like 'The truth about {topic}' -> concrete titles."""
     out: list[str] = []
@@ -87,7 +126,7 @@ def _template(selection: dict, script: dict, playbook: dict | None) -> dict:
         "thumbnail_variants": [" ".join(topic.split()[:4]).upper()],
         "thumbnail_prompt": f"{topic}, {selection.get('style', 'cinematic')}, "
                             "dramatic high-contrast lighting, bold composition",
-        "chapters": [],
+        "chapters": [] if selection["format"] == "short" else _derive_chapters(script),
     }
 
 
@@ -125,7 +164,16 @@ def _sanitize(md: dict, selection: dict, script: dict, playbook: dict | None) ->
         md["chapters"] = []
     else:
         ch = md.get("chapters")
-        md["chapters"] = ch if isinstance(ch, list) else []
+        ch = [c for c in ch if isinstance(c, dict) and c.get("time") and c.get("label")] \
+            if isinstance(ch, list) else []
+        # YouTube needs ≥3 markers with the first at 00:00 to render chapters. If the
+        # LLM under-delivered, derive them from the script's beats so long-form always
+        # ships usable chapters.
+        if len(ch) < 3:
+            ch = _derive_chapters(script) or ch
+        if ch:
+            ch[0]["time"] = "00:00"
+        md["chapters"] = ch
     return md
 
 

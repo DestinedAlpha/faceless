@@ -68,6 +68,32 @@ def _visual_consistency(playbook: dict, selection: dict) -> tuple[str, str]:
     return anchor, negative
 
 
+def _hero_beats(scene_audio: list[dict]) -> set[int]:
+    """Pick which scene indices get a real AI-video clip (Phase 7).
+
+    Empty (skip the whole layer) unless the AI-video layer is enabled + configured.
+    Otherwise choose up to `max_clips` "hero" beats: the hook (scene 0) and the
+    payoff (last scene) are the beats worth true generative motion, filtered to those
+    at least `min_scene_seconds` long (a clip on a <2.5s beat isn't worth the wait).
+    """
+    from .assets import motion  # lazy: no gradio import on the default path
+    if not motion.aivideo_available():
+        return set()
+    av = _cfg.get("providers.aivideo", {}) or {}
+    try:
+        max_clips = max(0, int(av.get("max_clips", 1) or 0))
+        min_secs = float(av.get("min_scene_seconds", 2.5) or 2.5)
+    except (TypeError, ValueError):
+        max_clips, min_secs = 1, 2.5
+    if max_clips <= 0 or not scene_audio:
+        return set()
+    n = len(scene_audio)
+    # Hook first, then payoff — the beats that most reward real motion.
+    candidates = [0] + ([n - 1] if n > 1 else [])
+    chosen = [i for i in candidates if scene_audio[i]["duration"] >= min_secs]
+    return set(chosen[:max_clips])
+
+
 def run(*, allow_synthetic: bool = True, skip_render: bool = False,
         skip_stock: bool = False) -> dict:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
@@ -117,6 +143,9 @@ def run(*, allow_synthetic: bool = True, skip_render: bool = False,
     style_anchor, negative = _visual_consistency(playbook, selection)
     base_seed = images.run_seed(run_dir.name)
     want_parallax = float((playbook.get("motion") or {}).get("parallax_intensity", 0.0) or 0.0) > 0
+    # Optional AI-video hero clips (Phase 7): true generative motion for 1-2 beats.
+    # Opt-in + time-boxed; a slow/absent Space just falls back to parallax/still.
+    hero_beats = _hero_beats(scene_audio)
     scene_assets: list[dict] = []
     staged: list[Path] = []
     for i, scene in enumerate(scenes):
@@ -144,6 +173,21 @@ def run(*, allow_synthetic: bool = True, skip_render: bool = False,
                 log.warning("[pipeline] scene %d parallax failed: %s", i, exc)
                 layers = None
 
+        # AI-video hero clip (Phase 7): only for the 1-2 chosen hero beats, only when
+        # the layer is enabled + configured, and only if we have a source still to
+        # animate. Time-boxed inside motion.ai_clip; any miss leaves clip=None so the
+        # scene renders parallax or the flat still. Never on the critical path.
+        clip_name: str | None = None
+        if image_name and i in hero_beats:
+            try:
+                from .assets import motion  # lazy: gradio only when the layer is on
+                clip_name = motion.ai_clip(img_path, run_dir / "video", i)
+                if clip_name:
+                    staged.append(run_dir / "video" / clip_name)
+            except Exception as exc:  # noqa: BLE001
+                log.warning("[pipeline] scene %d AI clip failed: %s", i, exc)
+                clip_name = None
+
         video_name: str | None = None
         if want_stock:
             clip = run_dir / "video" / f"scene_{i:02d}.mp4"
@@ -152,7 +196,8 @@ def run(*, allow_synthetic: bool = True, skip_render: bool = False,
                 staged.append(clip)
                 video_name = clip.name
 
-        scene_assets.append({"image": image_name, "video": video_name, "layers": layers})
+        scene_assets.append({"image": image_name, "video": video_name,
+                             "layers": layers, "clip": clip_name})
 
     # 5. Captions from word timings (grouping + emphasis per playbook)
     captions = subtitles.build_captions(scene_audio, scenes, playbook)
@@ -217,6 +262,7 @@ def run(*, allow_synthetic: bool = True, skip_render: bool = False,
         "hook_alt": hooks.get("alt"),
         "qc_score": qc_report.get("score"),
         "qc_passed": qc_report.get("passed"),
+        "ai_clips": sum(1 for a in scene_assets if a.get("clip")),
     }
 
     # 8. Render

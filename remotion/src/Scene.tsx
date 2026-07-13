@@ -8,6 +8,7 @@ import {
   staticFile,
   useCurrentFrame,
   useVideoConfig,
+  Video,
 } from "remotion";
 import { Scene as SceneType } from "./types";
 import { Layers } from "./Layers";
@@ -69,7 +70,16 @@ export const Scene: React.FC<{
     <AbsoluteFill style={{ backgroundColor: "#000000" }}>
       {/* Visual layer carries the entrance opacity + transform. */}
       <AbsoluteFill style={{ opacity: enter.opacity, transform: enter.transform }}>
-        {useParallax ? (
+        {scene.clip ? (
+          // AI-generated hero clip (Phase 7): true generative motion. Looped + muted
+          // (the scene's narration plays separately) and it wins over every fallback.
+          <Video
+            src={staticFile(`render/${scene.clip}`)}
+            style={cover}
+            muted
+            loop
+          />
+        ) : useParallax ? (
           <Layers layers={scene.layers!} kenBurns={kb} intensity={parallaxIntensity} />
         ) : scene.video ? (
           <OffthreadVideo src={staticFile(`render/${scene.video}`)} style={cover} muted />

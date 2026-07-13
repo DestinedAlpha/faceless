@@ -146,6 +146,36 @@ def check_node() -> None:
 
 
 # --------------------------------------------------------------------------- #
+def check_aivideo() -> None:
+    """Phase 7 optional AI-video hero clips: probe the Space only if opted in.
+
+    OFF by default (SKIP). When enabled we verify gradio_client is importable and
+    the configured Space is reachable — but a queued/slow Space is EXPECTED, so a
+    connect failure is a soft note, not a hard FAIL (the pipeline always falls back
+    to 2.5D parallax / the still).
+    """
+    from faceless.assets import motion
+    if not motion.aivideo_available():
+        _record("aivideo", SKIP, "off (providers.aivideo.enabled=false or no space)")
+        return
+    av = _cfg.get("providers.aivideo", {}) or {}
+    space = str(av.get("space", "")).strip()
+    try:
+        from gradio_client import Client  # noqa: F401
+    except Exception:  # noqa: BLE001
+        _record("aivideo", FAIL, "gradio_client not installed (pip install gradio_client)")
+        return
+    try:
+        from gradio_client import Client
+        _, dt = _time(lambda: Client(space))
+        _record("aivideo", PASS, f"Space '{space}' reachable in {dt:.1f}s "
+                                 f"(timeout {av.get('timeout_seconds')}s, best-effort)")
+    except Exception as exc:  # noqa: BLE001
+        _record("aivideo", SKIP, f"Space '{space}' not reachable now "
+                                 f"({str(exc)[:60]}); run falls back to parallax")
+
+
+# --------------------------------------------------------------------------- #
 def check_learn() -> None:
     """Phase 6 learn loop: store readable + report which ingest path is live."""
     try:
@@ -171,6 +201,7 @@ def main() -> int:
     check_images(tmp)
     check_tts(tmp)
     check_stock(tmp)
+    check_aivideo()
     check_learn()
 
     fails = [r for r in _results if r[1] == FAIL]

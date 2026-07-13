@@ -20,6 +20,9 @@ export type Scene = {
   durationFrames: number;
   image: string | null;
   video: string | null;
+  // Optional AI-generated hero clip (Phase 7). When present it renders as the scene
+  // visual (true generative motion); absent falls back to parallax / stock / still.
+  clip: string | null;
   layers: Layers | null;
   audio: string | null;
   onScreenText: string;

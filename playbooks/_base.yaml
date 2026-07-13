@@ -18,6 +18,10 @@ pacing:
   seconds_per_scene: 4.5      # target average; TTS audio still drives real timing
   scene_count: [4, 9]         # clamp the LLM's scene count into this band
   total_seconds: [30, 55]     # short-form target length band
+  # Long-form (16:9) pacing — used only when the selector picks format "long".
+  # A longer beat but many more of them, so a 5-min video isn't a 9-slide slideshow.
+  long_seconds_per_scene: 7.0
+  long_scene_count: [8, 48]   # clamp long-form scene count into this band
 
 voice:
   style: "clear, engaging, confident narrator"
