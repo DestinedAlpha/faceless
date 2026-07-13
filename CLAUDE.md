@@ -56,9 +56,11 @@ Degrades gracefully with zero keys. No auto-upload.
   and run_id-keyed metrics fields for the Phase 6 learn loop). Wired in `pipeline.py`; summary
   gains run_id/title_variants/thumbnails/checklist. Verified: real render (8-scene explainer
   short, 67.3s, 43MB, audio+video) at concurrency=2 (no crash this run), pre-QC 0.82 PASS,
-  post-QC PASS, 3 thumbnails + 3 A/B titles + checklist all produced. NOTE: rembg/onnx NOT
-  installed on this machine, so parallax (Phase 2) and thumbnail cutout both degrade to flat
-  stills / plain-bg — expected graceful path; install rembg to exercise them.
+  post-QC PASS, 3 thumbnails + 3 A/B titles + checklist all produced. UPDATE 2026-07-13:
+  rembg 2.0.76 + onnxruntime 1.27.0 are NOW installed and working on this machine (u2net
+  model downloads/loads; `motion.cutout()` verified producing a clean RGBA cutout on a real
+  scene image). So parallax (Phase 2) + thumbnail cutout (Phase 5) run for real now, not
+  degraded. (`onnx` the format lib is absent but not needed — rembg only requires onnxruntime.)
 - Phase 4 Hook intelligence + QC gate: `faceless/plan/hook_lab.py` (`develop_hooks`: LLM
   drafts N candidate hooks per playbook `hook_formulas`, self-scores curiosity/specificity/
   stakes/scroll_stop, weighted pick → winner + A/B `alt`; logs all to `hooks.json`; offline
