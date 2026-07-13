@@ -11,6 +11,7 @@ from pathlib import Path
 
 from ..core.config import load_config
 from ..core.log import get_logger
+from . import grade as grade_mod
 
 log = get_logger(__name__)
 _cfg = load_config()
@@ -39,7 +40,9 @@ def build_spec(*, selection: dict, script: dict, scene_audio: list[dict],
     zoom = float(_cfg.get("render.ken_burns_zoom", 0.12))
     # Transition + caption look come from the niche playbook when present.
     pb_motion = pb.get("motion", {})
-    trans = (pb_motion.get("transitions") or [None])[0] or _cfg.get("render.transition", "fade")
+    trans_list = [t for t in (pb_motion.get("transitions") or []) if t] \
+        or [_cfg.get("render.transition", "fade")]
+    trans = trans_list[0]
     trans_frames = int(_cfg.get("render.transition_frames", 12))
     pb_caps = pb.get("captions", {})
 
@@ -58,6 +61,7 @@ def build_spec(*, selection: dict, script: dict, scene_audio: list[dict],
             "durationFrames": dur_frames,
             "image": asset.get("image"),
             "video": asset.get("video"),
+            "layers": asset.get("layers"),
             "audio": Path(sa["audio"]).name,
             "onScreenText": scene_src.get("on_screen_text", "") or "",
             "sfx": scene_src.get("sfx", "") or "",
@@ -97,6 +101,7 @@ def build_spec(*, selection: dict, script: dict, scene_audio: list[dict],
         "music": Path(music).name if music else None,
         "render": {
             "transition": trans,
+            "transitions": trans_list,
             "transitionFrames": trans_frames,
             "captionsEnabled": bool(_cfg.get("render.captions.enabled", True)),
             "captionFontFamily": pb_caps.get("font_family")
@@ -104,6 +109,7 @@ def build_spec(*, selection: dict, script: dict, scene_audio: list[dict],
             "captionStyle": pb_caps.get("style", "clean"),
             "captionPosition": pb_caps.get("position", "lower"),
             "parallaxIntensity": float(pb_motion.get("parallax_intensity", 0.0) or 0.0),
+            "grade": grade_mod.resolve(pb, selection["niche"]),
             "duckDb": float(_cfg.get("render.music.duck_db", -14)),
             "sfxEnabled": bool(_cfg.get("render.sfx.enabled", True)),
             "sfxGainDb": float(_cfg.get("render.sfx.gain_db", -8)),

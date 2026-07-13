@@ -43,7 +43,7 @@ def _scene_count(secs: float, playbook: dict | None) -> int:
     return max(lo, min(hi, max(3, n)))
 
 
-def _prompt(selection: dict, playbook: dict | None) -> str:
+def _prompt(selection: dict, playbook: dict | None, hook: str | None = None) -> str:
     secs = selection["target_seconds"]
     kind = selection["format"]
     pb = playbook or {}
@@ -53,6 +53,9 @@ def _prompt(selection: dict, playbook: dict | None) -> str:
     per_scene = max(2.0, secs / n_scenes)
     structure = " -> ".join(pb.get("structure", []) or [])
     hooks = "\n".join(f"  - {h}" for h in (pb.get("hook_formulas") or [])[:4])
+    # A pre-approved hook (from hook_lab) overrides scene 1's opening line.
+    hook_line = (f'\nSCENE 1 NARRATION MUST BE EXACTLY THIS PRE-APPROVED HOOK '
+                 f'(do not reword it):\n  "{hook.strip()}"\n' if hook and hook.strip() else "")
     visual = pb.get("visual", {})
     art = visual.get("art_direction", selection.get("style", ""))
     consistency = visual.get("consistency", "keep a consistent look across scenes")
@@ -62,7 +65,7 @@ def _prompt(selection: dict, playbook: dict | None) -> str:
 TOPIC: {selection['topic']}
 NICHE: {selection['niche']}
 HOOK ANGLE: {selection['hook_angle']}
-
+{hook_line}
 NICHE PLAYBOOK (follow it):
 - Beat structure: {structure or 'hook -> build -> payoff -> loop'}
 - Narrator delivery: {voice_style}
@@ -85,7 +88,7 @@ Constraints:
 Return JSON only, matching the schema."""
 
 
-def _template(selection: dict, playbook: dict | None) -> dict:
+def _template(selection: dict, playbook: dict | None, hook: str | None = None) -> dict:
     """No-LLM fallback script (playbook-aware pacing + look)."""
     topic = selection["topic"]
     secs = selection["target_seconds"]
@@ -98,7 +101,8 @@ def _template(selection: dict, playbook: dict | None) -> dict:
     scenes = []
     for i in range(n):
         if i == 0:
-            narration = f"Here's something about {topic} almost nobody knows."
+            narration = (hook.strip() if hook and hook.strip()
+                         else f"Here's something about {topic} almost nobody knows.")
             ost = topic
         elif i == n - 1:
             narration = f"And that's why {topic} still matters today."
@@ -125,26 +129,29 @@ def _template(selection: dict, playbook: dict | None) -> dict:
     }
 
 
-def write_script(selection: dict, playbook: dict | None = None) -> dict:
+def write_script(selection: dict, playbook: dict | None = None,
+                 hook: str | None = None) -> dict:
+    """Write the scene-by-scene script. `hook` (from hook_lab) pins scene 1's line."""
     if llm.available():
         try:
-            script = llm.complete_json(_prompt(selection, playbook), schema=SCRIPT_SCHEMA,
-                                       system=_SYSTEM)
-            script = _sanitize(script, selection, playbook)
+            script = llm.complete_json(_prompt(selection, playbook, hook),
+                                       schema=SCRIPT_SCHEMA, system=_SYSTEM)
+            script = _sanitize(script, selection, playbook, hook)
             log.info("[script] LLM wrote %d scenes (~%.0fs)", len(script["scenes"]),
                      sum(s["duration"] for s in script["scenes"]))
             return script
         except Exception as exc:  # noqa: BLE001
             log.warning("[script] LLM script failed (%s) -> template", exc)
-    script = _template(selection, playbook)
+    script = _template(selection, playbook, hook)
     log.info("[script] template script with %d scenes", len(script["scenes"]))
     return script
 
 
-def _sanitize(script: dict, selection: dict, playbook: dict | None = None) -> dict:
+def _sanitize(script: dict, selection: dict, playbook: dict | None = None,
+              hook: str | None = None) -> dict:
     scenes = script.get("scenes") or []
     if not scenes:
-        return _template(selection, playbook)
+        return _template(selection, playbook, hook)
     style_suffix = (playbook or {}).get("visual", {}).get("style_suffix", "")
     for s in scenes:
         s.setdefault("on_screen_text", "")
@@ -159,6 +166,10 @@ def _sanitize(script: dict, selection: dict, playbook: dict | None = None) -> di
         except (TypeError, ValueError):
             s["duration"] = 3.0
         s["duration"] = max(1.5, min(20.0, s["duration"]))
+    # Pin the pre-approved hook onto scene 1 in case the LLM drifted from it.
+    if hook and hook.strip():
+        scenes[0]["narration"] = hook.strip()
+        script["hook"] = hook.strip()
     script.setdefault("hook", scenes[0]["narration"])
     script.setdefault("cta", "Follow for more.")
     script.setdefault("title_working", selection["topic"])

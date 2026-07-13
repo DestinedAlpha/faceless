@@ -146,6 +146,19 @@ def check_node() -> None:
 
 
 # --------------------------------------------------------------------------- #
+def check_learn() -> None:
+    """Phase 6 learn loop: store readable + report which ingest path is live."""
+    try:
+        from faceless.learn import store
+        from faceless.learn import youtube_analytics as yt
+        rows = store.read_rows()
+        auto = "OAuth pull" if yt.available() else "manual inbox only"
+        _record("learn", PASS, f"{len(rows)} perf row(s); {auto}")
+    except Exception as exc:  # noqa: BLE001
+        _record("learn", FAIL, str(exc)[:120])
+
+
+# --------------------------------------------------------------------------- #
 def main() -> int:
     tmp = _cfg.cache_dir / "smoke"
     tmp.mkdir(parents=True, exist_ok=True)
@@ -158,6 +171,7 @@ def main() -> int:
     check_images(tmp)
     check_tts(tmp)
     check_stock(tmp)
+    check_learn()
 
     fails = [r for r in _results if r[1] == FAIL]
     passes = [r for r in _results if r[1] == PASS]

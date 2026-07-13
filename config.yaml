@@ -122,6 +122,34 @@ render:
   remotion_concurrency: 2
   remotion_crf: 18             # quality (lower = better, bigger)
 
+# --- Quality gate (Phase 4) ------------------------------------------------
+qc:
+  enabled: true
+  min_score: 0.62            # pre-render pass threshold (0..1)
+  revise: true               # attempt one LLM revision of the weakest part if below
+  min_hook_words: 4          # a hook shorter than this reads as a stub
+  min_scene_words: 3         # non-final beats need at least this many spoken words
+  duration_tolerance: 0.15   # post-render: allowed |rendered-spec| / spec
+
+# --- Learn loop (Phase 6: manual-upload analytics -> playbook patches) ------
+learn:
+  enabled: true
+  # Manual path: paste metrics from YouTube Studio here (one JSON object/line).
+  inbox: "memory/metrics_inbox.jsonl"
+  min_samples: 3            # per-niche usable rows required before patching a playbook
+  patch_playbooks: true     # allow reflect to write playbooks/learned/*.yaml overlays
+  lookback_days: 28         # analytics window for the OAuth pull
+  max_backfill: 50          # cap on past uploads pulled by --backfill
+  # Optional automated pull (free, one-time Google OAuth). Leave client_secret
+  # blank to use the manual inbox only; drop the file at memory/client_secret.json
+  # (or set an absolute/relative path here) to enable `faceless learn --pull`.
+  oauth:
+    client_secret: ""
+    token_store: "memory/.oauth_token.json"
+    scopes:
+      - "https://www.googleapis.com/auth/yt-analytics.readonly"
+      - "https://www.googleapis.com/auth/youtube.readonly"
+
 # --- Runtime ---------------------------------------------------------------
 runtime:
   cache_dir: "cache"

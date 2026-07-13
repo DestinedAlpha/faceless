@@ -108,17 +108,30 @@ def render(*, spec: dict, assets: list[Path], out_path: Path) -> Path:
     concurrency = int(_cfg.get("render.remotion_concurrency", 2))
     crf = int(_cfg.get("render.remotion_crf", 18))
 
-    cmd = [
-        "npx", "remotion", "render",
-        "src/index.ts", COMPOSITION_ID, str(out_path),
-        f"--props={spec_path}",
-        f"--concurrency={concurrency}",
-        f"--crf={crf}",
-        "--log=info",
-    ]
+    def _cmd(conc: int) -> list[str]:
+        return [
+            "npx", "remotion", "render",
+            "src/index.ts", COMPOSITION_ID, str(out_path),
+            f"--props={spec_path}",
+            f"--concurrency={conc}",
+            f"--crf={crf}",
+            "--log=info",
+        ]
+
+    # Chromium render tabs can OOM-crash ("Page crashed!", non-zero exit) on long
+    # heavy compositions (parallax layers + grade + captions) when several tabs run
+    # in parallel. If a multi-tab render fails, fall back to a single tab — slower
+    # but much lower peak memory — so a crash degrades to a slow success, not a fail.
     log.info("[remotion] rendering -> %s (concurrency=%d, crf=%d)",
              out_path, concurrency, crf)
-    _run(cmd, cwd=remotion_dir)
+    try:
+        _run(_cmd(concurrency), cwd=remotion_dir)
+    except subprocess.CalledProcessError as exc:
+        if concurrency <= 1:
+            raise
+        log.warning("[remotion] render failed at concurrency=%d (%s) -> retry at 1",
+                    concurrency, exc)
+        _run(_cmd(1), cwd=remotion_dir)
 
     if not out_path.exists():
         # Robustness: some Node/OS/path combinations resolve the output relative

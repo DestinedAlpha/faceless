@@ -33,6 +33,10 @@ _cfg = load_config()
 
 PLAYBOOK_DIR = _cfg.root / "playbooks"
 GENERATED_DIR = PLAYBOOK_DIR / "generated"
+# Phase 6 learn loop writes per-niche overlays here; they merge LAST (highest
+# priority) over the authored/base playbook so lessons from real analytics shape
+# every future run. Authored packs are never mutated; delete an overlay to reset.
+LEARNED_DIR = PLAYBOOK_DIR / "learned"
 
 # Hard-coded safety net so the resolver works even if _base.yaml is missing.
 _FALLBACK_BASE: dict[str, Any] = {
@@ -246,16 +250,40 @@ def _synthesize(niche: str, base: dict, topics: list | None) -> dict | None:
 # --------------------------------------------------------------------------- #
 # Public API
 # --------------------------------------------------------------------------- #
-def get_playbook(niche: str, topics: list | None = None,
-                 allow_synthesis: bool = True) -> dict:
-    """Resolve the best playbook for `niche`.
+def _apply_learned(pb: dict) -> dict:
+    """Merge the Phase 6 learned overlay for this niche LAST, if one exists.
 
-    1) authored/cached playbook if it exists,
-    2) else synthesize one via the LLM (cached),
-    3) else fall back to the closest known playbook,
-    4) else the base playbook.
-    Always returns a usable dict.
+    The overlay (written by `learn/reflect.py`) carries only whitelisted retention
+    levers plus a leading-underscore `_learned` provenance block. Merging it here —
+    for every resolution path — is what makes each run inherit the lessons.
     """
+    niche = _norm(pb.get("niche", "generic"))
+    overlay = _load_yaml(LEARNED_DIR / f"{niche}.yaml")
+    if not overlay:
+        return pb
+    merged = _deep_merge(pb, overlay)
+    src = merged.get("_source", "")
+    if "+learned" not in src:
+        merged["_source"] = f"{src}+learned"
+    log.info("[mastery] applied learned overlay for '%s' (%s)", niche,
+             ", ".join(k for k in overlay if not k.startswith("_")))
+    return merged
+
+
+def base_playbook(niche: str) -> dict:
+    """Resolve a niche's playbook WITHOUT the learned overlay.
+
+    Used by the learn loop so reflection blends from the stable authored/base
+    levers each cycle (idempotent given the same performance data), rather than
+    compounding on top of its own previous overlay.
+    """
+    return _resolve(niche, topics=None, allow_synthesis=False)
+
+
+# --------------------------------------------------------------------------- #
+# Public API
+# --------------------------------------------------------------------------- #
+def _resolve(niche: str, topics: list | None, allow_synthesis: bool) -> dict:
     base = _base()
 
     pb = load_playbook(niche)
@@ -272,6 +300,7 @@ def get_playbook(niche: str, topics: list | None = None,
     if near:
         pb = load_playbook(near) or base
         pb["_source"] = f"fallback:{near}"
+        pb["niche"] = _norm(niche)
         log.info("[mastery] no playbook for '%s' -> nearest known '%s'", niche, near)
         return pb
 
@@ -279,3 +308,17 @@ def get_playbook(niche: str, topics: list | None = None,
     base["_source"] = "base"
     log.info("[mastery] no playbook for '%s' -> base defaults", niche)
     return base
+
+
+def get_playbook(niche: str, topics: list | None = None,
+                 allow_synthesis: bool = True) -> dict:
+    """Resolve the best playbook for `niche`.
+
+    1) authored/cached playbook if it exists,
+    2) else synthesize one via the LLM (cached),
+    3) else fall back to the closest known playbook,
+    4) else the base playbook,
+    then apply the Phase 6 learned overlay (real-analytics lessons) on top.
+    Always returns a usable dict.
+    """
+    return _apply_learned(_resolve(niche, topics, allow_synthesis))

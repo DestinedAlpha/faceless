@@ -136,13 +136,26 @@ def _extract_json(text: str) -> Any:
 
 
 # Gemini's responseSchema is an OpenAPI subset. Our schemas are simple enough that
-# they pass through; we just drop keys Gemini rejects (additionalProperties, $schema).
+# they pass through; we just drop the JSON-schema annotation keywords Gemini rejects.
+# CAREFUL: 'title' is both an annotation keyword AND a legal *property name* (metadata
+# has a field literally called "title"). We must strip the annotation but keep the
+# property, so we never filter keys that live inside a `properties` map.
 def _to_gemini_schema(schema: dict) -> dict:
     drop = {"additionalProperties", "$schema", "title", "default", "examples"}
 
     def clean(node: Any) -> Any:
         if isinstance(node, dict):
-            return {k: clean(v) for k, v in node.items() if k not in drop}
+            out: dict[str, Any] = {}
+            for k, v in node.items():
+                if k == "properties" and isinstance(v, dict):
+                    # Property NAMES are data, not keywords — keep them verbatim,
+                    # only clean each property's sub-schema.
+                    out[k] = {pk: clean(pv) for pk, pv in v.items()}
+                elif k in drop:
+                    continue
+                else:
+                    out[k] = clean(v)
+            return out
         if isinstance(node, list):
             return [clean(v) for v in node]
         return node

@@ -12,3 +12,6 @@ remotion/public/render/
 *.log
 scratch_*
 .DS_Store
+
+# Synthesized playbook cache (regenerated per run; not source of truth)
+playbooks/generated/

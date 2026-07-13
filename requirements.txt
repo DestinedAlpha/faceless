@@ -22,3 +22,8 @@ rembg>=2.0             # background cutout for thumbnails (onnxruntime pulled in
 
 # Utility
 numpy>=1.26
+
+# Analytics learn loop (Phase 6) — OPTIONAL. Only for the automated OAuth pull;
+# the manual metrics_inbox.jsonl path works with zero extra deps.
+google-auth-oauthlib>=1.2
+google-api-python-client>=2.100
